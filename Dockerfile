@@ -35,12 +35,23 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
     ROUTER_HOME=/app/router \
-    DATA_DIR=/data \
+    DATA_DIR=/data/9router \
     HOME=/data/home
 
-# Railway me-mount volume di /data. Buat di sini supaya izinnya benar
-# walaupun berjalan tanpa volume (saat pertama kali).
-RUN mkdir -p /data/home /app/router && chown -R node:node /data /app
+# Buat titik mount dan direktori datanya saat build.
+#
+# Kenapa datanya di /data/9router, bukan langsung /data:
+# Railway me-mount volume pada /data SAAT RUNTIME dengan kepemilikan root, dan
+# container ini berjalan sebagai user `node`. Akibatnya user `node` tidak bisa
+# menulis langsung ke /data. Tapi kalau image sudah punya subdirektori
+# /data/9router milik `node`, mount Railway tidak menghapusnya, sehingga
+# penulisan tetap bisa dilakukan TANPA menjalankan container sebagai root.
+#
+# Fallback RAILWAY_RUN_UID=0 masih tersedia bila ada platform yang tetap
+# menolak; entrypoint akan mencetak instruksinya.
+RUN mkdir -p /data/9router /data/home /app/router \
+ && chown -R node:node /data /app \
+ && chmod 755 /data
 
 USER node
 
