@@ -1,0 +1,10 @@
+# Runtime artifacts (diunduh saat container mulai, bukan bagian dari repo)
+router/
+data/
+.node-runtime/
+.9router-runtime/
+__pycache__/
+
+# Log & OS
+*.log
+.DS_Store

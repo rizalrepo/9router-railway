@@ -1,0 +1,7 @@
+.git
+.gitignore
+data/
+router/
+*.log
+Dockerfile
+docker-compose.yml
