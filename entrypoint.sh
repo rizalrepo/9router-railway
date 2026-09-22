@@ -16,6 +16,39 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 log "node $(node --version) di $(command -v node)"
+# ------------------------------------------------------- izin volume Railway ---
+# Railway me-mount volume sebagai root. Image ini berjalan sebagai user `node`,
+# dan dokumentasi Railway mencatat masalah izin ini secara eksplisit. Kalau kita
+# tidak bisa menulis, jangan mati begitu saja: beri pesan yang bisa ditindak.
+DATA_DIR="${DATA_DIR:-/data}"
+HOME_DIR="${HOME:-/data/home}"
+
+if ! mkdir -p "$DATA_DIR" "$HOME_DIR" 2>/dev/null; then
+  cat >&2 <<'MSG'
+[entrypoint] FATAL: tidak bisa menulis ke DATA_DIR/HOME.
+
+Kalau Anda memasang volume Railway, set variabel ini pada service:
+    RAILWAY_RUN_UID=0
+
+Railway me-mount volume sebagai root, sementara image ini berjalan sebagai user
+`node`, jadi penulisan ditolak. Dokumentasi Railway: "Docker images that run as
+a non-root UID by default will have permissions issues when performing
+operations within an attached volume."
+MSG
+  exit 1
+fi
+
+# Kalau bisa ditulis tapi bukan milik kita (kasus volume baru tanpa
+# RAILWAY_RUN_UID), coba ambil alih; abaikan bila tidak punya hak.
+chown -R "$(id -u):$(id -g)" "$DATA_DIR" "$HOME_DIR" 2>/dev/null || true
+
+if ! touch "$DATA_DIR/.write-test" 2>/dev/null; then
+  echo "[entrypoint] FATAL: DATA_DIR ($DATA_DIR) tidak bisa ditulis. Set RAILWAY_RUN_UID=0." >&2
+  exit 1
+fi
+rm -f "$DATA_DIR/.write-test"
+log "data dapat ditulis: $DATA_DIR"
+
 
 # ----------------------------------------------------------------- 9Router ----
 if [ -f "$APP_DIR/server.js" ] && [ -f "$APP_DIR/custom-server.js" ]; then
